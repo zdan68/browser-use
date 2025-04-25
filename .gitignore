@@ -191,3 +191,5 @@ gcp-login.json
 *.jsonl
 
 uv.lock
+my_use/myenv/bin/activate
+my_use/myenv/
