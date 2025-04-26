@@ -11,7 +11,7 @@ load_dotenv()
 
 # 任务顺序列表
 TASK_SEQUENCE = [
-    "login",
+    # "login",
     # "baidu",
     # "zhihu",
     # "google",
@@ -110,4 +110,4 @@ def get_report_template() -> str:
     Returns:
         报告模板字符串
     """
-    return ""
+    return "" 

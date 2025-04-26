@@ -188,7 +188,6 @@ class BrowserContextConfig(BaseModel):
 	timezone_id: str | None = None
 
 	force_new_context: bool = False
-	auth_file: str | None = None
 
 
 @dataclass
@@ -283,8 +282,6 @@ class BrowserContext:
 		self.session: BrowserSession | None = None
 		self.active_tab: Page | None = None
 
-		print("!!!!!!!!!!! VERY UNIQUE DEBUG MESSAGE IN INITIALIZE_SESSION !!!!!!!!!!!")
-
 	async def __aenter__(self):
 		"""Async context manager entry"""
 		await self._initialize_session()
@@ -350,17 +347,10 @@ class BrowserContext:
 	@time_execution_async('--initialize_session')
 	async def _initialize_session(self):
 		"""Initialize the browser session"""
-		print("🌎 开始初始化浏览器会话，context_id:", self.context_id)
 		logger.debug(f'🌎  Initializing new browser context with id: {self.context_id}')
 
 		playwright_browser = await self.browser.get_playwright_browser()
-		print(f"获取到playwright浏览器实例，准备创建context")
-		try:
-			context = await self._create_context(playwright_browser)
-			print("成功创建浏览器上下文")
-		except Exception as e:
-			print(f"创建浏览器上下文失败: {e}")
-			raise
+		context = await self._create_context(playwright_browser)
 		self._page_event_handler = None
 
 		# Get or create a page to use
@@ -435,16 +425,12 @@ class BrowserContext:
 
 	async def get_session(self) -> BrowserSession:
 		"""Lazy initialization of the browser and related components"""
-		print("调用get_session")
 		if self.session is None:
-			print("session为空，需要初始化")
 			try:
 				return await self._initialize_session()
 			except Exception as e:
-				print(f"❌ 初始化会话失败: {e}")
-				logger.error(f'❌ Failed to create new browser session: {e} (did the browser process quit?)')
+				logger.error(f'❌  Failed to create new browser session: {e} (did the browser process quit?)')
 				raise e
-		print("使用已有session")
 		return self.session
 
 	async def get_current_page(self) -> Page:
@@ -453,7 +439,6 @@ class BrowserContext:
 		return await self._get_current_page(session)
 
 	async def _create_context(self, browser: PlaywrightBrowser):
-		print(f"-------------------------------------")
 		"""Creates a new browser context with anti-detection measures and loads cookies if available."""
 		if self.browser.config.cdp_url and len(browser.contexts) > 0 and not self.config.force_new_context:
 			context = browser.contexts[0]
@@ -467,9 +452,6 @@ class BrowserContext:
 				kwargs['no_viewport'] = False
 			if self.config.user_agent is not None:
 				kwargs['user_agent'] = self.config.user_agent
-			print(f"self.config.auth_file: {self.config.auth_file}")
-			if self.config.auth_file:
-				print(f"self.config.auth_file: {self.config.auth_file}")
 
 			context = await browser.new_context(
 				**kwargs,
@@ -485,7 +467,6 @@ class BrowserContext:
 				geolocation=self.config.geolocation,
 				permissions=self.config.permissions,
 				timezone_id=self.config.timezone_id,
-				storage_state=self.config.auth_file,
 			)
 
 		if self.config.trace_path:

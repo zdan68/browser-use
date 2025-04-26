@@ -193,3 +193,13 @@ gcp-login.json
 uv.lock
 my_use/myenv/bin/activate
 my_use/myenv/
+
+my_use/auth_states/
+my_use/tmp/
+my_use/history/
+my_use/trace/
+my_use/recording/
+my_use/downloads/
+
+my_use/tasks/version_2/
+
