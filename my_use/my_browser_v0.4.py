@@ -50,7 +50,7 @@ def setup_logger():
 load_dotenv()
 
 # 导入任务定义模块
-from my_use.tasks import TASK_SEQUENCE, get_task
+from my_use.tasks import TASK_SEQUENCE, get_task, get_common_instructions
 from my_use.convert_results import convert_results_to_json
 
 async def main():
@@ -110,8 +110,8 @@ async def main():
     for task_key in TASK_SEQUENCE:
         # 获取任务描述
         task_info = get_task(task_key)
-        task_description = task_info["description"]
-        logger.info(f"创建任务: {task_key} - {task_description[:50]}...")
+        task_description = f"任务描述:\n{task_info['description']}\n通用指令:\n{get_common_instructions()}"
+        logger.info(f"创建任务: {task_key}")
         agent = Agent(
             task=task_description,  # 使用实际任务描述而不是键名
             llm=llm,

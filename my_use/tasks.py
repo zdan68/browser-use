@@ -103,6 +103,16 @@ def get_task(task_key: str) -> Dict[str, Any]:
         "description": description
     }
 
+def get_common_instructions() -> str:
+    """
+    获取通用指令
+    
+    Returns:
+        str: 通用指令文本   
+    """
+    return read_task_description("common_instructions")
+
+
 def get_report_template() -> str:
     """
     获取报告模板
