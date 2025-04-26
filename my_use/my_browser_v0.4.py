@@ -53,6 +53,30 @@ load_dotenv()
 from my_use.tasks import TASK_SEQUENCE, get_task, get_common_instructions
 from my_use.convert_results import convert_results_to_json
 
+# 添加一个函数来运行有限数量的并发任务
+async def run_with_limited_concurrency(tasks, max_concurrency=3):
+    """
+    运行任务，但限制最大并发数量
+    
+    Args:
+        tasks: 要执行的任务列表
+        max_concurrency: 最大并发数量，默认为3
+        
+    Returns:
+        任务执行结果的列表
+    """
+    semaphore = asyncio.Semaphore(max_concurrency)
+    
+    async def run_task_with_semaphore(task):
+        async with semaphore:
+            return await task
+            
+    # 将任务包装在信号量中
+    limited_tasks = [run_task_with_semaphore(task) for task in tasks]
+    
+    # 并发执行所有任务（但受到信号量限制）
+    return await asyncio.gather(*limited_tasks)
+
 async def main():
     # 设置日志系统
     logger = setup_logger()
@@ -105,6 +129,10 @@ async def main():
         base_url=os.getenv("DASH_SCOPE_BASE_URL"),
     )
 
+    # 获取配置中的最大并发数量，默认为3
+    max_concurrency = int(os.getenv("MAX_CONCURRENCY", "3"))
+    logger.info(f"设置最大并发任务数量: {max_concurrency}")
+
     agent_tasks = []
     logger.info(f"准备执行任务序列: {TASK_SEQUENCE}")
     for task_key in TASK_SEQUENCE:
@@ -121,9 +149,9 @@ async def main():
         )
         agent_tasks.append(agent.run())
     
-    # Run agents concurrently
-    logger.info(f"开始并行执行 {len(agent_tasks)} 个任务...")
-    results = await asyncio.gather(*agent_tasks)
+    # 使用有限并发运行任务
+    logger.info(f"开始并行执行 {len(agent_tasks)} 个任务，最大并发数: {max_concurrency}...")
+    results = await run_with_limited_concurrency(agent_tasks, max_concurrency)
     logger.info(f"执行完毕 {len(agent_tasks)} 个任务...")
 
     end_timestamp = time.time()
