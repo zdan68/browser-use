@@ -73,7 +73,7 @@ class CustomAgentHistoryList:
         return action_names
 
 
-def convert_results_to_json(input_file: str, output_dir: str) -> None:
+def convert_results_to_json(input_file: str, output_dir: str,task_id: int = 0) -> None:
     """
     将result.txt中的数据转换为结构化JSON并保存到指定目录，使用views.py中的类
     
@@ -127,21 +127,28 @@ def convert_results_to_json(input_file: str, output_dir: str) -> None:
         "summary": summary,
         "tasks": agent_results
     }
-    
-    # 保存为JSON
-    output_file = os.path.join(output_dir, "structured_results.json")
-    with open(output_file, 'w', encoding='utf-8') as f:
-        json.dump(final_result, f, ensure_ascii=False, indent=2)
-    
-    print(f"结构化结果已保存到: {output_file}")
-    
-    # 额外生成每个任务的单独JSON文件
-    for task in agent_results:
-        task_file = os.path.join(output_dir, f"task_{task['id']}.json")
-        with open(task_file, 'w', encoding='utf-8') as f:
-            json.dump(task, f, ensure_ascii=False, indent=2)
-        print(f"任务 {task['id']} 结果已保存到: {task_file}")
 
+    if task_id == 0:
+        # 保存为JSON
+        output_file = os.path.join(output_dir, "structured_results.json")
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(final_result, f, ensure_ascii=False, indent=2)
+    
+        print(f"结构化结果已保存到: {output_file}")
+        
+        # 额外生成每个任务的单独JSON文件
+        for task in agent_results:
+            task_file = os.path.join(output_dir, f"task_{task['id']}.json")
+            with open(task_file, 'w', encoding='utf-8') as f:
+                json.dump(task, f, ensure_ascii=False, indent=2)
+            print(f"任务 {task['id']} 结果已保存到: {task_file}")
+    else:
+        # 保存为JSON
+        output_file = os.path.join(output_dir, f"task_{task_id}.json")
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(final_result, f, ensure_ascii=False, indent=2)
+
+        print(f"结构化结果已保存到: {output_file}") 
 
 def parse_agent_history_lists(content: str) -> List[CustomAgentHistoryList]:
     """
@@ -399,6 +406,6 @@ def parse_model_outputs(outputs_text: str) -> List[Dict[str, Any]]:
 
 # 使用示例
 if __name__ == "__main__":
-    input_file = "my_use/results/20250427_001504/result.txt"
-    output_dir = "my_use/results/20250427_001504"
-    convert_results_to_json(input_file, output_dir)
+    input_file = "my_use/results/20250427_150245/result_4.txt"
+    output_dir = "my_use/results/20250427_150245"
+    convert_results_to_json(input_file, output_dir,5)
