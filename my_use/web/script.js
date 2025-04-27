@@ -135,6 +135,49 @@ function renderSummary(summary) {
                 ` : ''}
             </dl>
         `;
+        
+        // 如果有任务时长信息，添加任务时长表格
+        if (meta.task_durations && meta.task_durations.length > 0) {
+            html += `
+                <h6 class="text-primary mt-3">任务时长统计</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>任务 ID</th>
+                                <th>任务名称</th>
+                                <th>执行时长 (分钟)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${meta.task_durations.map(duration => `
+                                <tr>
+                                    <td>${duration.task_id}</td>
+                                    <td>${duration.task_name}</td>
+                                    <td>${duration.duration_minutes.toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                        ${meta.time_stats ? `
+                        <tfoot>
+                            <tr>
+                                <td colspan="2" class="text-end"><strong>平均时长:</strong></td>
+                                <td>${(meta.time_stats.average_seconds / 60).toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" class="text-end"><strong>最短时长:</strong></td>
+                                <td>${(meta.time_stats.min_seconds / 60).toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" class="text-end"><strong>最长时长:</strong></td>
+                                <td>${(meta.time_stats.max_seconds / 60).toFixed(2)}</td>
+                            </tr>
+                        </tfoot>
+                        ` : ''}
+                    </table>
+                </div>
+            `;
+        }
     }
     
     container.innerHTML = html;
@@ -149,14 +192,24 @@ function renderTaskList(tasks) {
     
     // 添加任务项
     tasks.forEach(task => {
+        // 获取任务时长信息（从task_meta中）
+        let durationInfo = '';
+        if (currentData.task_meta && currentData.task_meta.task_durations) {
+            const taskDuration = currentData.task_meta.task_durations.find(d => d.task_id === task.id);
+            if (taskDuration && taskDuration.duration_minutes !== undefined) {
+                durationInfo = `<span class="task-duration-badge">${taskDuration.duration_minutes.toFixed(1)}分钟</span>`;
+            }
+        }
+        
         const listItem = document.createElement('li');
-        listItem.className = 'list-group-item task-item d-flex justify-content-between align-items-center';
+        listItem.className = 'task-item';
         listItem.dataset.taskId = task.id;
         listItem.innerHTML = `
-            ${task.name}
-            <span class="badge ${task.success ? 'bg-success' : 'bg-danger'} rounded-pill">
-                ${task.success ? '成功' : '失败'}
-            </span>
+            <div class="d-flex align-items-center">
+                <span class="badge ${task.success ? 'bg-success' : 'bg-danger'} rounded-pill me-1">${task.id}</span>
+                <span class="task-name">${task.name}</span>
+                ${durationInfo}
+            </div>
         `;
         
         // 添加点击事件
@@ -199,6 +252,15 @@ function renderTaskDetails(task) {
     const container = document.getElementById('task-details');
     const titleElement = document.getElementById('task-title');
     
+    // 获取任务时长信息（从task_meta中）
+    let durationInfo = '未知';
+    if (currentData.task_meta && currentData.task_meta.task_durations) {
+        const taskDuration = currentData.task_meta.task_durations.find(d => d.task_id === task.id);
+        if (taskDuration && taskDuration.duration_minutes !== undefined) {
+            durationInfo = `${taskDuration.duration_minutes.toFixed(2)} 分钟`;
+        }
+    }
+    
     // 更新标题
     titleElement.textContent = `${task.name} ${task.success ? '✅' : '❌'}`;
     
@@ -213,6 +275,10 @@ function renderTaskDetails(task) {
                         <span class="${task.success ? 'status-success' : 'status-error'}">
                             ${task.success ? '成功' : '失败'}
                         </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>执行时长</span>
+                        <span class="badge bg-info">${durationInfo}</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between">
                         <span>总操作数</span>

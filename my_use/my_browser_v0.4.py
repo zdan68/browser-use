@@ -53,29 +53,44 @@ load_dotenv()
 from my_use.tasks import TASK_SEQUENCE, get_task, get_common_instructions
 from my_use.convert_results import convert_results_to_json
 
-# 添加一个函数来运行有限数量的并发任务
+# 添加一个函数来运行有限数量的并发任务，并记录每个任务的执行时间
 async def run_with_limited_concurrency(tasks, max_concurrency=3):
     """
-    运行任务，但限制最大并发数量
+    运行任务，但限制最大并发数量，并记录每个任务的执行时间
     
     Args:
         tasks: 要执行的任务列表
         max_concurrency: 最大并发数量，默认为3
         
     Returns:
-        任务执行结果的列表
+        包含任务执行结果和时间统计的列表，每项是一个元组(result, duration_seconds)
     """
     semaphore = asyncio.Semaphore(max_concurrency)
+    task_times = {}  # 存储任务开始时间
     
-    async def run_task_with_semaphore(task):
+    async def run_task_with_semaphore(task, task_index):
+        # 记录任务开始时间
+        start_time = time.time()
+        task_times[task_index] = {"start": start_time}
+        
         async with semaphore:
-            return await task
+            result = await task
             
-    # 将任务包装在信号量中
-    limited_tasks = [run_task_with_semaphore(task) for task in tasks]
+            # 记录任务结束时间和执行时长
+            end_time = time.time()
+            duration = end_time - start_time
+            task_times[task_index]["end"] = end_time
+            task_times[task_index]["duration"] = duration
+            
+            return result, duration
+            
+    # 将任务包装在信号量中，同时添加索引跟踪
+    limited_tasks = [run_task_with_semaphore(task, i) for i, task in enumerate(tasks)]
     
     # 并发执行所有任务（但受到信号量限制）
-    return await asyncio.gather(*limited_tasks)
+    results_with_times = await asyncio.gather(*limited_tasks)
+    
+    return results_with_times
 
 async def main():
     # 设置日志系统
@@ -151,7 +166,24 @@ async def main():
     
     # 使用有限并发运行任务
     logger.info(f"开始并行执行 {len(agent_tasks)} 个任务，最大并发数: {max_concurrency}...")
-    results = await run_with_limited_concurrency(agent_tasks, max_concurrency)
+    results_with_times = await run_with_limited_concurrency(agent_tasks, max_concurrency)
+    
+    # 提取结果和时间统计
+    results = [r[0] for r in results_with_times]
+    task_durations = [r[1] for r in results_with_times]
+    
+    # 输出每个任务的执行时间
+    for i, duration in enumerate(task_durations):
+        duration_minutes = round(duration / 60, 2)
+        logger.info(f"任务 {i+1} ({TASK_SEQUENCE[i]}) 执行时长: {duration:.2f}秒 ({duration_minutes}分钟)")
+    
+    # 计算时间统计
+    avg_duration = sum(task_durations) / len(task_durations) if task_durations else 0
+    min_duration = min(task_durations) if task_durations else 0
+    max_duration = max(task_durations) if task_durations else 0
+    
+    logger.info(f"任务时间统计 - 平均: {avg_duration:.2f}秒, 最短: {min_duration:.2f}秒, 最长: {max_duration:.2f}秒")
+    
     logger.info(f"执行完毕 {len(agent_tasks)} 个任务...")
 
     end_timestamp = time.time()
@@ -176,14 +208,28 @@ async def main():
 
     # 保存时间统计文件
     task_result = {
-        "tasks" : TASK_SEQUENCE,
+        "tasks": TASK_SEQUENCE,
         "start_time": datetime.fromtimestamp(start_timestamp).strftime('%Y-%m-%d %H:%M:%S'),   
         "end_time": datetime.fromtimestamp(end_timestamp).strftime('%Y-%m-%d %H:%M:%S'),
-        "duration_minutes": f"{duration_minutes}分钟"
+        "duration_minutes": f"{duration_minutes}分钟",
+        "task_durations": [
+            {
+                "task_id": i+1,
+                "task_name": TASK_SEQUENCE[i],
+                "duration_seconds": duration,
+                "duration_minutes": round(duration / 60, 2)
+            } 
+            for i, duration in enumerate(task_durations)
+        ],
+        "time_stats": {
+            "average_seconds": avg_duration,
+            "min_seconds": min_duration,
+            "max_seconds": max_duration
+        }
     }
     task_result_file = os.path.join(result_dir, "task_result.json")
     with open(task_result_file, "w", encoding="utf-8") as f:
-        json.dump(task_result, f, ensure_ascii=False)        
+        json.dump(task_result, f, ensure_ascii=False, indent=2)        
         
     logger.info("任务完全结束")
 

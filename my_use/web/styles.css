@@ -131,4 +131,77 @@ body {
 hr {
     margin: 15px 0;
     border-color: #dee2e6;
+}
+
+.task-list-container {
+    overflow-x: auto;
+    padding-bottom: 5px;
+    margin-bottom: 0;
+}
+
+.task-list-horizontal {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 4px;
+    overflow-x: auto;
+    margin-bottom: 0;
+    list-style-type: none;
+}
+
+.task-list-horizontal .task-item {
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: 4px;
+    margin-bottom: 0;
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+}
+
+.task-list-horizontal .task-item:hover {
+    background-color: #f0f0f0;
+    border-color: #adb5bd;
+}
+
+.task-list-horizontal .task-item.active {
+    background-color: #e3f2fd;
+    border-color: #90caf9;
+}
+
+.task-list-horizontal .task-item .badge {
+    margin-left: 8px;
+}
+
+/* Styles for the task duration badge */
+.task-duration-badge {
+    background-color: #17a2b8;
+    color: white;
+    font-size: 0.75rem;
+    padding: 3px 6px;
+    border-radius: 3px;
+    margin-left: 5px;
+    display: inline-block;
+}
+
+/* Make the card body compact for the task list */
+.task-list-card .card-body {
+    padding: 8px !important;
+}
+
+/* Make sure the task list scrolls on small screens */
+@media (max-width: 768px) {
+    .task-list-container {
+        padding-bottom: 10px;
+    }
+    
+    .task-list-horizontal {
+        padding-bottom: 5px; /* Add space for the scrollbar */
+    }
+}
+
+.task-name {
+    margin: 0 5px;
+    font-weight: 500;
 } 
